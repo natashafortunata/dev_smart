@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg",
+    "bmewburn.vscode-intelephense-client",
+    "onecentlin.laravel-blade",
+    "amiralizadeh9480.laravel-extra-intellisense",
+    "eamodio.gitlens"
+  ]
+}

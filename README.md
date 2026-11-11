@@ -1,59 +1,151 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# dev_smart — SPK Metode SMART (Laravel + PostgreSQL)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem Pendukung Keputusan berbasis web menggunakan metode **SMART**
+(*Simple Multi Attribute Rating Technique*), dibangun dengan **Laravel 12**,
+database **PostgreSQL** (dikelola lewat **pgAdmin 4**), dikembangkan di **VS Code**,
+dan versinya disimpan di **GitHub** (repo `dev_smart`).
 
-## About Laravel
+## Fitur
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+| Modul | Keterangan |
+|---|---|
+| Login & Role | `admin` (kelola semua data) dan `pimpinan` (lihat perhitungan & hasil) |
+| Kriteria | CRUD kriteria: kode, nama, bobot (1–100), jenis **benefit/cost** |
+| Sub Kriteria | Skala nilai per kriteria (mis. Sangat Baik = 100). Kriteria tanpa sub kriteria dinilai dengan angka langsung |
+| Alternatif | CRUD alternatif + pencarian |
+| Penilaian | Input nilai setiap alternatif terhadap setiap kriteria |
+| Perhitungan | Menampilkan seluruh langkah SMART (normalisasi bobot → matriks → utility → nilai akhir → ranking) |
+| Hasil & Ranking | Hasil tersimpan di tabel `hasil`, grafik batang, dan **cetak laporan** |
+| Pengguna | Manajemen akun admin/pimpinan |
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Rumus SMART yang dipakai
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. **Normalisasi bobot**: `w_j = bobot_j / Σ bobot`
+2. **Nilai utility**
+   - Benefit: `u_ij = (C_ij − C_min) / (C_max − C_min)`
+   - Cost: `u_ij = (C_max − C_ij) / (C_max − C_min)`
+   - Jika `C_max = C_min` maka `u_ij = 1`
+3. **Nilai akhir**: `V_i = Σ (w_j × u_ij)`
+4. **Perankingan**: urutkan `V_i` dari yang terbesar
 
-## Learning Laravel
+Logika perhitungan ada di `app/Services/SmartService.php` dan diuji di
+`tests/Feature/SmartTest.php` (dicocokkan dengan hitungan manual).
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Struktur Database (PostgreSQL)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```
+users        (id, name, email, role[admin|pimpinan], password, ...)
+kriteria     (id, kode, nama, bobot, jenis[benefit|cost], keterangan)
+sub_kriteria (id, kriteria_id → kriteria, nama, nilai)
+alternatif   (id, kode, nama, keterangan)
+penilaian    (id, alternatif_id → alternatif, kriteria_id → kriteria,
+              sub_kriteria_id → sub_kriteria (nullable), nilai)   UNIQUE(alternatif_id, kriteria_id)
+hasil        (id, alternatif_id → alternatif, nilai_akhir, peringkat)
+```
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Instalasi di Komputer (Windows / macOS / Linux)
 
-### Premium Partners
+### Prasyarat
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+- PHP 8.2+ dengan ekstensi `pdo_pgsql` dan `pgsql` aktif
+  (Windows/XAMPP: buka `php.ini`, hapus `;` di depan `extension=pdo_pgsql` dan `extension=pgsql`)
+- Composer
+- PostgreSQL 14+ dan **pgAdmin 4**
+- Git dan VS Code
 
-## Contributing
+### 1. Clone repo
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+git clone https://github.com/<username-anda>/dev_smart.git
+cd dev_smart
+composer install
+```
 
-## Code of Conduct
+### 2. Buat database di pgAdmin 4
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+1. Buka pgAdmin 4 → klik kanan **Servers › PostgreSQL › Databases** → **Create › Database…**
+2. Nama database: `dev_smart` → **Save**
 
-## Security Vulnerabilities
+### 3. Atur file `.env`
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## License
+Lalu ubah bagian database di `.env` sesuai password PostgreSQL Anda:
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+```
+DB_CONNECTION=pgsql
+DB_HOST=127.0.0.1
+DB_PORT=5432
+DB_DATABASE=dev_smart
+DB_USERNAME=postgres
+DB_PASSWORD=password_postgres_anda
+```
+
+### 4. Buat tabel + data contoh
+
+```bash
+php artisan migrate --seed
+```
+
+> Alternatif tanpa artisan: di pgAdmin buka database `dev_smart` → **Query Tool** →
+> buka file `database/sql/dev_smart.sql` → **Execute (F5)**.
+
+### 5. Jalankan aplikasi
+
+```bash
+php artisan serve
+```
+
+Buka http://127.0.0.1:8000
+
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@smart.test` | `password` |
+| Pimpinan | `pimpinan@smart.test` | `password` |
+
+> Segera ganti password lewat menu **Pengguna** setelah login.
+
+### Data contoh
+
+`database/seeders/ContohDataSeeder.php` berisi **data contoh** (5 kriteria, 5 alternatif)
+agar sistem bisa langsung dicoba. Ganti kriteria, bobot, sub kriteria, dan alternatif
+sesuai **dokumen analisis sistem** Anda — lewat menu aplikasi, atau edit seeder lalu
+jalankan `php artisan migrate:fresh --seed`.
+
+---
+
+## Menghubungkan PostgreSQL ke VS Code
+
+1. Buka folder project di VS Code. VS Code akan menyarankan ekstensi dari
+   `.vscode/extensions.json` → klik **Install All** (SQLTools + driver PostgreSQL, dll).
+2. Koneksi **"dev_smart (PostgreSQL / pgAdmin 4)"** sudah disiapkan di `.vscode/settings.json`.
+   Buka ikon **SQLTools** di sidebar → klik koneksi tersebut → masukkan password PostgreSQL.
+3. Tabel `kriteria`, `alternatif`, `penilaian`, `hasil`, dll. dapat dilihat dan di-query
+   langsung dari VS Code; perubahan yang sama tampil di pgAdmin 4 karena keduanya
+   terhubung ke server PostgreSQL yang sama.
+
+## Menyimpan Setiap Update ke GitHub
+
+Setelah setiap perubahan:
+
+```bash
+git add .
+git commit -m "Deskripsi perubahan"
+git push
+```
+
+Di VS Code bisa juga lewat panel **Source Control** (Ctrl+Shift+G): tulis pesan → **Commit** → **Sync Changes**.
+
+Workflow `.github/workflows/tests.yml` akan otomatis menjalankan test dengan PostgreSQL
+setiap kali ada push ke branch `main`.
+
+## Testing
+
+```bash
+php artisan test
+```
